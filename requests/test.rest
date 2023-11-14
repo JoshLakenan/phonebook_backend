@@ -1,0 +1,33 @@
+GET http://localhost:3001/api/persons
+
+###
+GET http://localhost:3001/api/persons/2
+
+###
+DELETE http://localhost:3001/api/persons/2
+
+### Valid post test
+POST http://localhost:3001/api/persons
+Content-Type: application/json
+
+{
+  "name": "Josh Lakenan",
+  "number": "269 779 2960"
+}
+
+### Duplicate Name error test
+POST http://localhost:3001/api/persons
+Content-Type: application/json
+
+{
+  "name": "Arto Hellas",
+  "number": "269 779 2960"
+}
+
+### Missing name error test
+POST http://localhost:3001/api/persons
+Content-Type: application/json
+
+{
+  "number": "269 779 2960"
+}
