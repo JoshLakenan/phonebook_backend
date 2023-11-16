@@ -8,25 +8,20 @@ const Person = require('./models/person.js');
 // morgan.token('body', (req) => JSON.stringify(req.body));
 // app.use(morgan(':method :url :status :response-time[3] :body'));
 
-const invalidPost = (req) => {
-  let newPerson = req.body;
-
-  if (!newPerson.name || !newPerson.number) {
-    return {error: 'Name and Number are required'};
-  }
-
-  if (persons.find(p => p.name === newPerson.name)) {
-    return {error: 'Name must be unique'};
-  }
-}
-
 const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: 'unknown endpoint' })
 }
 
-const errorHandler = (error, req, res, next) => {
-  console.log(error)
-  res.status(500).end();
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message)
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  } else if (error.name === 'ValidationError') {
+    return response.status(400).json({ error: error.message })
+  }
+
+  next(error)
 }
 
 
@@ -70,11 +65,8 @@ app.delete('/api/persons/:id', (req, res, next) => {
   .catch(error => next(error))
 });
 
-
 app.post('/api/persons', (req, res, next) => {
   let newPerson = req.body;
-
-  // if (invalidPost(req)) return res.status(400).send(invalidPost(req));
 
   new Person(newPerson)
     .save()
@@ -82,13 +74,17 @@ app.post('/api/persons', (req, res, next) => {
     .catch(error => next(error));
 })
 
-app.put('/api/persons/:id', (req, res) => {
+app.put('/api/persons/:id', (req, res, next) => {
   const updatedPerson = {
     name: req.body.name,
     number: req.body.number,
   }
-  Person.findByIdAndUpdate(req.params.id, updatedPerson, {new: true})
-    .then(updatedPerson => res.json(updatedPerson));
+  Person.findByIdAndUpdate(
+    req.params.id,
+    updatedPerson,
+    {new: true, runValidators: true, context: 'query'})
+    .then(updatedPerson => res.json(updatedPerson))
+    .catch(error => next(error));
 })
 
 app.use(unknownEndpoint);
